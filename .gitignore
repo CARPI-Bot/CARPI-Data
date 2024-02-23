@@ -1,3 +1,4 @@
 *.pyc
 .DS_Store
 data
+quacs_sql_conversion/data_insertion_sql
