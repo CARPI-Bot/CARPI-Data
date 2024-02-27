@@ -9,9 +9,8 @@ CREATE TABLE courses(
     dept VARCHAR(255) NOT NULL,
     code_num INT NOT NULL,
     title VARCHAR(255) NOT NULL,
-    desc_text TEXT NOT NULL,
-    CONSTRAINT pk_courses PRIMARY KEY(dept, code_num),
-    CONSTRAINT fk_courses_departments FOREIGN KEY(dept) REFERENCES departments(dept_code)
+    desc_text TEXT,
+    CONSTRAINT pk_courses PRIMARY KEY(dept, code_num)
 ) COMMENT 'Data for all courses';
 
 CREATE TABLE sections(
@@ -19,6 +18,7 @@ CREATE TABLE sections(
     dept VARCHAR(255) NOT NULL,
     code_num INT NOT NULL,
     sec_num INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
     seat_max INT NOT NULL,
     credit_min INT NOT NULL,
     credit_max INT NOT NULL,
