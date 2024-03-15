@@ -39,18 +39,18 @@ CREATE TABLE timeslots(
     CONSTRAINT fk_timeslots_sections FOREIGN KEY(crn) REFERENCES sections(crn)
 ) COMMENT 'Timeslot data for each section';
 
-CREATE TABLE slot_days(
+CREATE TABLE timeslot_days(
     crn INT NOT NULL,
     time_id INT NOT NULL,
-    week_day VARCHAR(1),
+    week_day VARCHAR(1) NOT NULL,
     CONSTRAINT pk_slot_days PRIMARY KEY(crn, time_id, week_day),
     CONSTRAINT fk_slot_days_timeslots FOREIGN KEY(crn, time_id) REFERENCES timeslots(crn, time_id)
 ) COMMENT 'Which days each section timeslot occurs on'
 
-CREATE TABLE slot_profs(
+CREATE TABLE timeslot_profs(
     crn INT NOT NULL,
     time_id INT NOT NULL,
-    instructor VARCHAR(255),
+    instructor VARCHAR(255) NOT NULL,
     CONSTRAINT pk_slot_profs PRIMARY KEY(crn, time_id, instructor),
     CONSTRAINT fk_slot_profs_timeslots FOREIGN KEY(crn, time_id) REFERENCES timeslots(crn, time_id)
 ) COMMENT 'Which professors teach each section timeslot';

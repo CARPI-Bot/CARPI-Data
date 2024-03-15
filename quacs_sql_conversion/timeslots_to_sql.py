@@ -1,19 +1,6 @@
 import sys
 import os
 import json
-
-def process_weekday(arr):
-    if (len(arr) == 0):
-        return 'NULL'
-    elif (len(arr) == 1):
-        return "'" + arr[0] + "'"
-    else:
-        result = "'"
-        for day in arr:
-            result += day + ", "
-        result = result[:-2]
-        result += "'"
-        return result
     
 def process_location(place):
     if len(place) == 0 or place == 'TBA':
@@ -26,12 +13,6 @@ def process_time(num):
         return 'NULL'
     else:
         return str(num) + "00"
-
-def process_instructor(name):
-    if name == 'TBA' or len(name) == 0:
-        return 'NULL'
-    else:
-        return "'" + name + "'"
     
 def process_date(date):
     if len(date) == 0:
@@ -48,7 +29,7 @@ if __name__ == '__main__':
         exit(0)
     else:
         file_to_read = sys.argv[1]
-    sql_start = "INSERT INTO timeslots (crn, time_id, instructor, room, date_start, date_end, days_week, time_start, time_end) VALUES\n\t"
+    sql_start = "INSERT INTO timeslots (crn, time_id, room, date_start, date_end, time_start, time_end) VALUES\n\t"
     sql_mid = ""
     sql_end = ";"
 
@@ -61,7 +42,7 @@ if __name__ == '__main__':
                 for sctn in sections:
                     timeslots = sctn['timeslots']
                     for i, tmslt in enumerate(timeslots):
-                        sql_mid += "(" + str(sctn['crn']) + ", " + str(i) + ", " + process_instructor(tmslt['instructor'].replace("'", "\\'")) + ", " + process_location(tmslt['location']) + ", " + process_date(tmslt['dateStart']) + ", " + process_date(tmslt['dateEnd']) + ", " + process_weekday(tmslt['days']) + ", " + process_time(tmslt['timeStart']) + ", " + process_time(tmslt['timeEnd']) + "),\n\t"
+                        sql_mid += "(" + str(sctn['crn']) + ", " + str(i) + ", " + process_location(tmslt['location']) + ", " + process_date(tmslt['dateStart']) + ", " + process_date(tmslt['dateEnd']) + ", " + process_time(tmslt['timeStart']) + ", " + process_time(tmslt['timeEnd']) + "),\n\t"
         sql_mid = sql_mid[:-3]
     with open(os.path.dirname(os.path.abspath(__file__)) + "/data_insertion_sql/tmslt_insert.sql", "w",) as sql_file:
         sql_file.write(sql_start + sql_mid + sql_end)
