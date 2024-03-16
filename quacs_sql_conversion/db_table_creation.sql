@@ -3,7 +3,7 @@ CREATE TABLE departments(
     dept_name VARCHAR(255) NOT NULL,
     school_name VARCHAR(255) NOT NULL,
     CONSTRAINT pk_departments PRIMARY KEY(dept_code)
-) COMMENT 'Data about departments and corresponding schools';
+) COMMENT 'Data about RPI departments and corresponding schools';
 
 CREATE TABLE courses(  
     dept VARCHAR(255) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE courses(
     title VARCHAR(255) NOT NULL,
     desc_text TEXT,
     CONSTRAINT pk_courses PRIMARY KEY(dept, code_num)
-) COMMENT 'Data for all courses';
+) COMMENT 'Courses from the RPI catalog';
 
 CREATE TABLE sections(
     crn INT NOT NULL,
@@ -22,10 +22,26 @@ CREATE TABLE sections(
     seat_max INT NOT NULL,
     credit_min INT NOT NULL,
     credit_max INT NOT NULL,
-    prereq_desc TEXT,
     CONSTRAINT pk_sections PRIMARY KEY(crn),
     CONSTRAINT fk_sections_courses FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
-) COMMENT 'Section data for each course';
+) COMMENT 'Sections for each course';
+
+CREATE TABLE prerequisites(
+    crn INT NOT NULL,
+    prereqs TEXT,
+    coreqs TEXT,
+    cross_list TEXT,
+    restr_level TEXT,
+    restr_major TEXT,
+    restr_clsfctn TEXT,
+    restr_degree TEXT,
+    restr_field TEXT,
+    restr_campus TEXT,
+    restr_college TEXT,
+    restr_ TEXT,
+    CONSTRAINT pk_prerequisites PRIMARY KEY(crn),
+    CONSTRAINT fk_prerequisites_sections FOREIGN KEY(crn) REFERENCES sections(crn)
+) COMMENT 'Prerequisites for each section';
 
 CREATE TABLE timeslots(
     crn INT NOT NULL,
