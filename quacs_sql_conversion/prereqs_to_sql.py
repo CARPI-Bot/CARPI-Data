@@ -9,12 +9,13 @@ def prereq(values):
         return "'" + nested(values['nested'], values['type']) + "'"
     desc_str = ""
     for key in values:
-        if key == "course":
-            desc_str += values[key] + ", "
-        elif key == "type":
-            pass
-        else:
-            oops("prereq", key)
+        match key:
+            case "course":
+                desc_str += values[key] + ", "
+            case "type":
+                pass
+            case _:
+                oops("prereq", key)
     return "'" + desc_str[:-2] + "'"
 
 def nested(values, nest_type):
@@ -23,14 +24,15 @@ def nested(values, nest_type):
     nested_string = ""
     for arr in values:
         for key in arr:
-            if key == "course":
-                nested_string += arr[key] + " " + nest_type + " "
-            elif key == "nested":
-                nested_string += "(" + nested(arr['nested'], arr['type']) + ") " + nest_type + " "
-            elif key == "type":
-                pass
-            else:
-                oops("nested", key)
+            match key:
+                case "course":
+                    nested_string += arr[key] + " " + nest_type + " "
+                case "nested":
+                    nested_string += "(" + nested(arr['nested'], arr['type']) + ") " + nest_type + " "
+                case "type":
+                    pass
+                case _:
+                    oops("nested", key)
     return nested_string[:-(2 + len(nest_type))]
 
 def coreq(values):
@@ -41,28 +43,35 @@ def coreq(values):
         final_string += course[:course.index("-")] + " " + course[course.index("-") + 1:] + ", "
     return "'" + final_string[:-2] + "'"
 
-def restriction(values):
+def cross_list(values):
+    if len(values) == 0:
+        raise ValueError("No values in cross_list_courses array")
+    final_string = ""
+    for course in values:
+        final_string += course[:course.index("-")] + " " + course[course.index("-") + 1:] + ", "
+    return "'" + final_string[:-2] + "'"
+
+def restriction(values, arr):
     if len(values) == 0:
         raise ValueError("No values in restriction dictionary")
-    desc_str = ""
     for key in values:
-        if key == "level":
-            desc_str += "Level: " + could_be(values[key], key) + "; "
-        elif key == "major":
-            desc_str += "Major: " + could_be(values[key], key) + "; "
-        elif key == "classification":
-            desc_str += "Classification: " + could_be(values[key], key) + "; "
-        elif key == "degree":
-            desc_str += "Degree: " + could_be(values[key], key) + "; "
-        elif key == "field_of_study":
-            desc_str += "Field of Study: " + could_be(values[key], key) + "; "
-        elif key == "campus":
-            desc_str += "Campus: " + could_be(values[key], key) + "; "
-        elif key == "college":
-            desc_str += "College: " + could_be(values[key], key) + "; "
-        else:
-            oops("restriction", key)
-    return "'" + desc_str[:-2] + "'"
+        match key:
+            case "level":
+                arr[0] = "'" + could_be(values[key], key) + "'"
+            case "major":
+                arr[1] = "'" + could_be(values[key], key) + "'"
+            case "classification":
+                arr[2] = "'" + could_be(values[key], key) + "'"
+            case "degree":
+                arr[3] = "'" + could_be(values[key], key) + "'"
+            case "field_of_study":
+                arr[4] = "'" + could_be(values[key], key) + "'"
+            case "campus":
+                arr[5] = "'" + could_be(values[key], key) + "'"
+            case "college":
+                arr[6] = "'" + could_be(values[key], key) + "'"
+            case _:
+                oops("restriction", key)
 
 def could_be(values, origin):
     if len(values) == 0:
@@ -81,17 +90,16 @@ def could_be(values, origin):
             oops("could_be", key)
     return desc_str[:-4]
 
-def cross_list(values):
-    if len(values) == 0:
-        raise ValueError("No values in cross_list_courses array")
-    final_string = ""
-    for course in values:
-        final_string += course[:course.index("-")] + " " + course[course.index("-") + 1:] + ", "
-    return "'" + final_string[:-2] + "'"
-
-
 def oops(source, value):
     raise ValueError(f"Dictionary key \"{value}\" not accounted for in {source}() function")
+
+def allnull(p, c, s, r):
+    if p != "NULL" or c != "NULL" or s != "NULL":
+        return False
+    for val in r:
+        if val != "NULL":
+            return False
+    return True
 
 if __name__ == '__main__':
     file_to_read = ""
@@ -102,7 +110,9 @@ if __name__ == '__main__':
         exit(0)
     else:
         file_to_read = sys.argv[1]
-    final_sql = ""
+    sql_start = "INSERT INTO prerequisites (crn, prereqs, coreqs, cross_list, restr_level, restr_major, restr_clsfctn, restr_degree, restr_field, restr_campus, restr_college) VALUES\n\t"
+    sql_mid = ""
+    sql_end = ";"
 
     with open(file_to_read, 'r') as f:
         json_data = json.load(f)
@@ -110,20 +120,22 @@ if __name__ == '__main__':
             section = json_data[crn]
             prq = "NULL"
             crq = "NULL"
-            rst = "NULL"
             csl = "NULL"
+            rst = ["NULL", "NULL", "NULL", "NULL", "NULL", "NULL", "NULL"]
             for key in section:
                 match key:
                     case 'prerequisites':
                         prq = prereq(section[key])
                     case 'corequisites':
                         crq = coreq(section[key])
-                    case 'restrictions':
-                        rst = restriction(section[key])
                     case 'cross_list_courses':
                         csl = cross_list(section[key])
+                    case 'restrictions':
+                        restriction(section[key], rst)
                     case _:
                         oops("main", key)
-            final_sql += f"UPDATE sections SET prereq_desc = {prq}, coreq_desc = {crq}, restrict_desc = {rst}, cross_list_desc = {csl} WHERE crn = {crn};\n"
+            if not allnull(prq, crq, csl, rst):
+                sql_mid += "(" + crn + ", " + prq + ", " + crq + ", " + csl + ", " + rst[0] + ", " + rst[1] + ", " + rst[2] + ", " + rst[3] + ", " + rst[4] + ", " + rst[5] + ", " + rst[6] + "),\n\t"
+        sql_mid = sql_mid[:-3]
     with open(os.path.dirname(os.path.abspath(__file__)) + "/data_insertion_sql/prereq_insert.sql", "w",) as sql_file:
-        sql_file.write(final_sql)
+        sql_file.write(sql_start + sql_mid + sql_end)

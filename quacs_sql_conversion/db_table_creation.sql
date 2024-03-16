@@ -38,9 +38,7 @@ CREATE TABLE prerequisites(
     restr_field TEXT,
     restr_campus TEXT,
     restr_college TEXT,
-    restr_ TEXT,
-    CONSTRAINT pk_prerequisites PRIMARY KEY(crn),
-    CONSTRAINT fk_prerequisites_sections FOREIGN KEY(crn) REFERENCES sections(crn)
+    CONSTRAINT pk_prerequisites PRIMARY KEY(crn)
 ) COMMENT 'Prerequisites for each section';
 
 CREATE TABLE timeslots(
