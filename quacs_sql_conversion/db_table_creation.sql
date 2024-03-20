@@ -1,11 +1,14 @@
-CREATE TABLE departments(
+CREATE DATABASE IF NOT EXISTS bot_data;
+USE bot_data;
+
+CREATE TABLE IF NOT EXISTS departments(
     dept_code VARCHAR(255) NOT NULL,
     dept_name VARCHAR(255) NOT NULL,
     school_name VARCHAR(255) NOT NULL,
     CONSTRAINT pk_departments PRIMARY KEY(dept_code)
 ) COMMENT 'Data about RPI departments and corresponding schools';
 
-CREATE TABLE courses(  
+CREATE TABLE IF NOT EXISTS courses(  
     dept VARCHAR(255) NOT NULL,
     code_num INT NOT NULL,
     title VARCHAR(255) NOT NULL,
@@ -13,7 +16,7 @@ CREATE TABLE courses(
     CONSTRAINT pk_courses PRIMARY KEY(dept, code_num)
 ) COMMENT 'Courses from the RPI catalog';
 
-CREATE TABLE sections(
+CREATE TABLE IF NOT EXISTS sections(
     crn INT NOT NULL,
     dept VARCHAR(255) NOT NULL,
     code_num INT NOT NULL,
@@ -26,7 +29,7 @@ CREATE TABLE sections(
     CONSTRAINT fk_sections_courses FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Sections for each course';
 
-CREATE TABLE prerequisites(
+CREATE TABLE IF NOT EXISTS prerequisites(
     crn INT NOT NULL,
     prereqs TEXT,
     coreqs TEXT,
@@ -41,7 +44,7 @@ CREATE TABLE prerequisites(
     CONSTRAINT pk_prerequisites PRIMARY KEY(crn)
 ) COMMENT 'Prerequisites for each section';
 
-CREATE TABLE timeslots(
+CREATE TABLE IF NOT EXISTS timeslots(
     crn INT NOT NULL,
     time_id INT NOT NULL,
     room VARCHAR(255),
@@ -53,15 +56,15 @@ CREATE TABLE timeslots(
     CONSTRAINT fk_timeslots_sections FOREIGN KEY(crn) REFERENCES sections(crn)
 ) COMMENT 'Timeslot data for each section';
 
-CREATE TABLE timeslot_days(
+CREATE TABLE IF NOT EXISTS timeslot_days(
     crn INT NOT NULL,
     time_id INT NOT NULL,
     week_day VARCHAR(1) NOT NULL,
     CONSTRAINT pk_slot_days PRIMARY KEY(crn, time_id, week_day),
     CONSTRAINT fk_slot_days_timeslots FOREIGN KEY(crn, time_id) REFERENCES timeslots(crn, time_id)
-) COMMENT 'Which days each section timeslot occurs on'
+) COMMENT 'Which days each section timeslot occurs on';
 
-CREATE TABLE timeslot_profs(
+CREATE TABLE IF NOT EXISTS timeslot_profs(
     crn INT NOT NULL,
     time_id INT NOT NULL,
     instructor VARCHAR(255) NOT NULL,
