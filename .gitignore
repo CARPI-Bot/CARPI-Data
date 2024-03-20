@@ -2,3 +2,4 @@
 .DS_Store
 data
 quacs_sql_conversion/data_insertion_sql
+sql_db_setup/auth.json
