@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS bot_data;
-USE bot_data;
-
 CREATE TABLE IF NOT EXISTS departments(
     dept_code VARCHAR(255) NOT NULL,
     dept_name VARCHAR(255) NOT NULL,
