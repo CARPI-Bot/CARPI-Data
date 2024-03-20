@@ -1,20 +1,20 @@
 import asyncio
-import aiohttp
-from bs4 import BeautifulSoup, Tag
-import re
 import json
+import re
 import time
 
-ClientSession = aiohttp.ClientSession
+from aiohttp import ClientSession, ClientTimeout
+from bs4 import BeautifulSoup, Tag
 
-"""
-Example header.getText() -> CSCI 1100 - Computer Science I
 
-Given a course title of type bs4.Tag, checks that the title contains a valid department
-name, course number, and a non-empty course name. Parses the title and returns a tuple
-in the form of (dept_name, course_num, course_name).
-"""
-async def split_course_title(header:Tag) -> tuple:
+async def split_course_title(header: Tag) -> tuple:
+    """
+    Example header.getText() -> CSCI 1100 - Computer Science I
+
+    Given a course title of type bs4.Tag, checks that the title contains a valid department
+    name, course number, and a non-empty course name. Parses the title and returns a tuple
+    in the form of (dept_name, course_num, course_name).
+    """
     title = header.getText()
     # Check that both the department and course number are valid 
     try:
@@ -37,21 +37,20 @@ async def split_course_title(header:Tag) -> tuple:
             course_num = title_list[1].strip()
         # Course numbers may contain a period
         float(course_num)
-        if not (len(dept_name) == 4 and dept_name.isalpha()) or len(course_name) == 0:
-            raise
+        assert (len(dept_name) == 4 and dept_name.isalpha()) and len(course_name) > 0
     except:
         print(f"Bad course title \"{title.strip()}\", ignoring...")
         raise
     return dept_name, course_num, course_name
 
-"""
-Example course preview page: https://catalog.rpi.edu/preview_course_nopop.php?catoid=26&coid=61385
-
-Given a course title of type bs4.Tag and a dictionary to store course attributes in,
-parses all course information below the course title. Any recognized attributes in the
-parsed content such as requisites, credit hours, etc. are added to the dictionary.
-"""
 async def parse_course_content(header:Tag, course_info:dict) -> None:
+    """
+    Example course preview: https://catalog.rpi.edu/preview_course_nopop.php?catoid=26&coid=61385
+
+    Given a course title of type bs4.Tag and a dictionary to store course attributes in,
+    parses all course information below the course title. Any recognized attributes in the
+    parsed content such as requisites, credit hours, etc. are added to the dictionary.
+    """
     # Start searching for the course description following the course title header
     elements = tuple(header.next_siblings)
     raw_info = ""
@@ -63,7 +62,7 @@ async def parse_course_content(header:Tag, course_info:dict) -> None:
                 if elements[j].name == "br" and len(raw_info) > 0 and raw_info[-1] != "\n":
                     raw_info += "\n"
                 buffer = elements[j].get_text()
-                raw_info += buffer.strip() if buffer != None else ""
+                raw_info += buffer.strip() if buffer is not None else ""
                 j += 1
             break
     raw_info = raw_info.strip("\n").split("\n")
@@ -88,7 +87,7 @@ async def parse_course_content(header:Tag, course_info:dict) -> None:
             if i == 0:
                 course_info["description"] = field
 
-async def scrape_course(session:ClientSession, url:str, parser:str, data:dict) -> None:
+async def scrape_course(session: ClientSession, url: str, parser: str, data: dict) -> None:
     course_info = dict()
     status_code = 0
     # Repeatedly requests course preview page until response is successful
@@ -116,13 +115,13 @@ async def scrape_course(session:ClientSession, url:str, parser:str, data:dict) -
     else:
         data[dept_name] = [course_info]
 
-async def courses_to_dict(parser:str, domain:str, req_params:str, headers:str) -> dict:
+async def courses_to_dict(parser: str, domain: str, req_params: str, headers: str) -> dict:
     start_time = time.time()
     json_data = dict()
     page_num = 1
     url = f"{domain}content.php?"
-    async with ClientSession(headers=headers) as session:
-        while (url != None):
+    async with ClientSession(headers=headers, timeout=ClientTimeout(10)) as session:
+        while (url is not None):
             page_start_time = time.time()
             search_response = await session.get(
                 url = url,
