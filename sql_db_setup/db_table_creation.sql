@@ -68,3 +68,11 @@ CREATE TABLE IF NOT EXISTS timeslot_profs(
     CONSTRAINT pk_slot_profs PRIMARY KEY(crn, time_id, instructor),
     CONSTRAINT fk_slot_profs_timeslots FOREIGN KEY(crn, time_id) REFERENCES timeslots(crn, time_id)
 ) COMMENT 'Which professors teach each section timeslot';
+
+CREATE TABLE IF NOT EXISTS acad_cal_events(  
+    event_id INT NOT NULL AUTO_INCREMENT,
+    title TEXT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    CONSTRAINT pk_acad_cal_events PRIMARY KEY(event_id)
+) COMMENT 'Events from the academic calendar';
