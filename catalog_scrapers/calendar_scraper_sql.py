@@ -39,8 +39,8 @@ if __name__ == "__main__":
     assert calendar_div
     year = 1970
 
-    sql_start = "INSERT INTO acad_cal_events (title, start_date, end_date) VALUES\n\t"
-    sql_mid = ""
+    sql_start = "INSERT INTO acad_cal_events (title, date_start, date_end) VALUES\n\t"
+    sql_mid_arr = []
     sql_end = ";"
 
     for month_table in calendar_div.find_all("table", class_="acadcal"):
@@ -57,7 +57,11 @@ if __name__ == "__main__":
             event_date = date_cell.text.strip()
             # Replaces unicode right single quotation mark
             event_name = anchor.text.replace("\u2019", "'")
-            sql_mid += "('" + event_name.replace("'", "\\'") + "', " + date_format(event_date) + "),\n\t"
+            sql_mid_arr.append("('" + event_name.replace("'", "\\'") + "', " + date_format(event_date) + "),\n\t")
+    
+    sql_mid = ""
+    for event in set(sql_mid_arr):
+        sql_mid += event
     sql_mid = sql_mid[:-3]
     with open(os.path.dirname(os.path.abspath(__file__)) + "/data_insertion_sql/acad_cal_insert.sql", "w") as outfile:
         outfile.write(sql_start + sql_mid + sql_end)

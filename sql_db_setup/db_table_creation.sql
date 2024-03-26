@@ -70,9 +70,8 @@ CREATE TABLE IF NOT EXISTS timeslot_profs(
 ) COMMENT 'Which professors teach each section timeslot';
 
 CREATE TABLE IF NOT EXISTS acad_cal_events(  
-    event_id INT NOT NULL AUTO_INCREMENT,
-    title TEXT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    CONSTRAINT pk_acad_cal_events PRIMARY KEY(event_id)
+    title VARCHAR(512) NOT NULL,
+    date_start DATE NOT NULL,
+    date_end DATE,
+    CONSTRAINT pk_acad_cal_events PRIMARY KEY(title, date_start)
 ) COMMENT 'Events from the academic calendar';
