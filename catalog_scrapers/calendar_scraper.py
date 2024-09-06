@@ -3,6 +3,10 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
+
+def test():
+    print("HELLO YALL")
+    
 if __name__ == "__main__":
     URL = "https://info.rpi.edu/registrar/academic-calendar"
     HEADERS = {
