@@ -11,29 +11,32 @@ CREATE TABLE IF NOT EXISTS courses(
 CREATE TABLE IF NOT EXISTS course_availability(
     dept VARCHAR(4) NOT NULL,
     code_num SMALLINT NOT NULL,
-    semester SMALLINT NOT NULL,
-    CONSTRAINT pk_course_avail PRIMARY KEY(dept, code_num, semester),
+    sem_year SMALLINT NOT NULL,
+    semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
+    CONSTRAINT pk_course_avail PRIMARY KEY(dept, code_num, sem_year, semester),
     CONSTRAINT fk_course_avail_courses
         FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Courses from the RPI catalog';
 
 CREATE TABLE IF NOT EXISTS professors(
-    semester SMALLINT NOT NULL,
+    sem_year SMALLINT NOT NULL,
+    semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
     dept VARCHAR(4) NOT NULL,
     code_num SMALLINT NOT NULL,
     prof_name VARCHAR(255) NOT NULL,
-    CONSTRAINT pk_professors PRIMARY KEY(semester, dept, code_num, prof_name),
+    CONSTRAINT pk_professors PRIMARY KEY(sem_year, semester, dept, code_num, prof_name),
     CONSTRAINT fk_professors_courses
         FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Professors for each course';
 
 CREATE TABLE IF NOT EXISTS seats(
-    semester SMALLINT NOT NULL,
+    sem_year SMALLINT NOT NULL,
+    semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
     dept VARCHAR(4) NOT NULL,
     code_num SMALLINT NOT NULL,
     seats_filled SMALLINT NOT NULL,
     seats_total SMALLINT NOT NULL,
-    CONSTRAINT pk_seats PRIMARY KEY(semester, dept, code_num),
+    CONSTRAINT pk_seats PRIMARY KEY(sem_year, semester, dept, code_num),
     CONSTRAINT fk_seats_courses
         FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Seats filled in each course';
