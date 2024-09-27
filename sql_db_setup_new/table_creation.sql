@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS courses(
     code_num SMALLINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     desc_text TEXT NOT NULL,
+    credit_min TINYINT NOT NULL,
+    credit_max TINYINT NOT NULL,
     CONSTRAINT pk_courses PRIMARY KEY(dept, code_num)
 ) COMMENT 'Courses from the RPI catalog';
 
@@ -35,13 +37,3 @@ CREATE TABLE IF NOT EXISTS seats(
     CONSTRAINT fk_seats_courses
         FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Seats filled in each course';
-
-CREATE TABLE IF NOT EXISTS credits(
-    semester SMALLINT NOT NULL,
-    dept VARCHAR(4) NOT NULL,
-    code_num SMALLINT NOT NULL,
-    credits TINYINT NOT NULL,
-    CONSTRAINT pk_credits PRIMARY KEY(semester, dept, code_num, credits),
-    CONSTRAINT fk_credits_courses
-        FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
-) COMMENT 'Offered credits for each course';
