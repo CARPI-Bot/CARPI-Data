@@ -1,3 +1,10 @@
+-- drop existing tables to be replaced
+DROP TABLE IF EXISTS seats;
+DROP TABLE IF EXISTS professors;
+DROP TABLE IF EXISTS course_availability;
+DROP TABLE IF EXISTS courses;
+
+-- create the tables
 CREATE TABLE IF NOT EXISTS courses(
     dept VARCHAR(4) NOT NULL,
     code_num SMALLINT NOT NULL,
