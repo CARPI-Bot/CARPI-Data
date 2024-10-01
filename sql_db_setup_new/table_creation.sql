@@ -1,6 +1,7 @@
 -- drop existing tables to be replaced
 DROP TABLE IF EXISTS seats;
 DROP TABLE IF EXISTS professors;
+DROP TABLE IF EXISTS course_relationships;
 DROP TABLE IF EXISTS course_availability;
 DROP TABLE IF EXISTS courses;
 
@@ -24,6 +25,18 @@ CREATE TABLE IF NOT EXISTS course_availability(
     CONSTRAINT fk_course_avail_courses
         FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
 ) COMMENT 'Courses from the RPI catalog';
+
+CREATE TABLE IF NOT EXISTS course_relationships(
+    dept VARCHAR(4) NOT NULL,
+    code_num SMALLINT NOT NULL,
+    relationship ENUM('Coreq', 'Cross') NOT NULL,
+    rel_dept VARCHAR(4) NOT NULL,
+    rel_code_num SMALLINT NOT NULL,
+    CONSTRAINT pk_course_rels
+        PRIMARY KEY(dept, code_num, relationship, rel_dept, rel_code_num),
+    CONSTRAINT fk_course_rels_courses
+        FOREIGN KEY(dept, code_num) REFERENCES courses(dept, code_num)
+) COMMENT 'Courses that are corequisites or crosslists for other courses';
 
 CREATE TABLE IF NOT EXISTS professors(
     sem_year SMALLINT NOT NULL,
