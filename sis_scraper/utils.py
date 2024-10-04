@@ -1,3 +1,5 @@
+import re
+
 def map_day_codes_to_days(day_code):
     day_map = {
         'M': 'monday',
@@ -24,3 +26,20 @@ def get_term(year, semester):
         return f"{year}01"
     else:
         return True
+    
+def get_min_max(input):
+    input.replace(" ", "")
+    if input == "" or re.search("[a-zA-Z]", input):
+        return 0, 0
+    if input.find("-") != -1:
+        min, max = input.split("-")
+        min = re.sub(r'\D', '', min)
+        max = re.sub(r'\D', '', max)
+        return int(min), int(max)
+    if input.find("to") != -1:  
+        min, max = input.split("to")
+        min = re.sub(r'\D', '', min)
+        max = re.sub(r'\D', '', max)
+        return int(min), int(max)
+
+    return int(input), int(input)

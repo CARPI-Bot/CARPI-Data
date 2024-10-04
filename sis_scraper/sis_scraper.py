@@ -98,7 +98,9 @@ async def parse_prereqs(soup):
 
     individual_prereq = prereq_text_cleaned.split(" and ")
         
-    return individual_prereq
+    if(individual_prereq == ""):
+        return []
+    return individual_prereq 
 
 async def fetch_CRNs(soup):
   CRNs = []
@@ -179,9 +181,9 @@ async def get_sections_info(session, term, soup):
       "CRN": CRN,
       "instructor": instructors.split(',')[0].strip(),  # Only take the first instructor
       "schedule": schedule,
-      "capacity": capacity,
-      "registered": registered,
-      "open": open_seats
+      "capacity": int(capacity),
+      "registered": int(registered),
+      "open": int(open_seats)
     }
     
     sections_data.append(section_entry)
@@ -212,7 +214,10 @@ async def get_course_detail(session, term, subject_code, course_code):
     "corequisite" : [],
     "prerequisite" : [],
     "crosslist" : [],
-    "credits" : "0",
+    "credits" : {
+        "min": 0,
+        "max": 0
+    },
     "offered" : "",
   }
   
@@ -235,31 +240,40 @@ async def get_course_detail(session, term, subject_code, course_code):
                             info["corequisite"] = [_.split(":")[2].strip()]
                         else:
                             info["corequisite"] = [_.split(":")[1].strip()]
-                    except:
+                    except OSError as e:
+                        print(e)
                         print(f"ERROR Coreq: {subject_code} - {course_code}")
                         info["corequisite"] = None
                 elif("Prerequisites/Corequisites:" in _):
                     try:
                         info["prerequisite"] = await parse_prereqs(soup)
-                    except:
+                    except OSError as e:
+                        print(e)
                         print(f"ERROR Prereq: {subject_code} - {course_code}")
                         info["prerequisite"] = None
                 elif("Credit Hours:" in _):
                     try:
-                        info["credits"] = _.split(":")[1].strip()
-                    except:
+                        min_max = utils.get_min_max(_.split(":")[1].strip())
+                        info["credits"] = {
+                            "min": min_max[0],
+                            "max": min_max[1]
+                        } 
+                    except OSError as e:
+                        print(e)
                         print(f"ERROR Credit: {subject_code} - {course_code}")
                         info["credits"] = None
                 elif("When Offered: " in _):
                     try:
                         info["offered"] = _.split(":")[1].strip()
-                    except:
+                    except OSError as e:
+                        print(e)
                         print(f"ERROR Offered: {subject_code} - {course_code}")
                         info["offered"] = None
                 elif("Cross Listed:" in _):
                     try:
                         info["crosslist"] = _.split(":")[1].strip()
-                    except:
+                    except OSError as e:
+                        print(e)
                         print(f"ERROR crosslist: {subject_code} - {course_code}")
                         info["crosslist"] = None
 
@@ -271,7 +285,7 @@ async def main():
     total_start = time.time()
     start_year = 2023
     end_year = 2024
-    for i in range(start, end_year + 1):
+    for i in range(start_year, end_year + 1):
         for semester in ["spring", "summer", "fall"]:
             term = utils.get_term(i, semester)
             print(f"Running Term: {term}")
