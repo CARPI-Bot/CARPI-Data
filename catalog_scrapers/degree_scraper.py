@@ -60,50 +60,51 @@ def main():
                     current_degrees.append(name_link_pair)
                 storage_ul.append(current_degrees)
         
-            # print(len(storage_ul))
-            # print(storage_ul[0])
+            # - All the degrees in each type
+            # print(storage_ul)
+            # - Type of degrees
             # print(storage_p)
-            # return
             # time to visit individual links and find the credit requirements!
             # use "acalog index % 3" to get the year, fall semester, and spring semester. 
-            # will need to separate carefully to get the right information
+    
+            # more issues:
+            # 1. Not all the pages are in the same format. You will indeed have a total of 8 acalog_core's and 4 headers per undergraduate degree (check COMD for the error)
+            # 2. Try using a counter instead of intentionally shortening the acalog_core list. The code will need a lot of work.
             classes_and_requirements = {}
             for index_of_degree in range(len(storage_p)):
                 # print(storage_ul[index_of_degree])
                 # bachelors
                 if storage_p[index_of_degree] == "Baccalaureate":
                     for degree in storage_ul[index_of_degree]:
-                        classes_and_requirements[degree[0]] = []
+                        classes_and_requirements[degree[0]] = {}
                         link = degree[1]
                         requirements = requests.get(link)
+                        print(classes_and_requirements)
                         if requirements.status_code == 200:
-                            acalog_core_counter = 0
                             soup = BeautifulSoup(requirements.text, 'html.parser')
-                            portfolios = soup.find('div', attrs={'class':'custom_leftpad_20'})
-                            # get all acalog-cores
-                            acalog_core = portfolios.findAll('div', attrs={'class':'acalog-core'})[0:13]
-                            for i in range(len(acalog_core)):
-                                # print(acalog_core[i])
-                                if i >= 6:
-                                    # junior year
-                                    if i == 6:
-                                        classes_and_requirements["Junior"] = []
-                                    elif i <= 9:
-                                        x = 5
-                                    
-                                    if i == 10:
-                                        classes_and_requirements["Senior"] = []
-                                    elif i > 10:
-                                        x = 6
+                            portfolios = soup.find('td', attrs={'colspan':'4', 'class':'width' })
+                            all_info = portfolios.find('div', attrs={'class':'custom_leftpad_20'})
+                            # get all acalog-cores (first thru. fourth years)
+                            all_acalog_cores = all_info.findAll('div', attrs={'class':'acalog-core'}, recursive=False)[0:4]
+                            all_leftpads = all_info.findAll('div', attrs={'class':'custom_leftpad_20'}, recursive=False)[0:4]
+                            # print(all_acalog_cores)
+                            # print(all_leftpads)
+                            fall_sem = []
+                            spring_sem = []
+                            for i in range(4):
+                                fall_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[0].find('ul')
+                                spring_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[1].find('ul')
+                                print(fall_classes)
+                                return
+                                if i == 0:
+                                    classes_and_requirements[degree[0]]["First Year"] = []
+                                elif i == 1:
+                                    classes_and_requirements[degree[0]]["Second Year"] = []
+                                elif i == 2:
+                                    classes_and_requirements[degree[0]]["Third Year"] = []
                                 else:
-                                    if i % 3 == 0:
-                                        # year
-                                        year = acalog_core[i].find('h2').get_text()
-                                        if year == "First Year":
-                                            classes_and_requirements["Freshman"] = []
-                                        elif year == "Second Year":
-                                            classes_and_requirements["Sophomore"] = []
-                
+                                    classes_and_requirements[degree[0]]["Fourth Year"] = []
+                            # return
                         print(classes_and_requirements)
 
         break
