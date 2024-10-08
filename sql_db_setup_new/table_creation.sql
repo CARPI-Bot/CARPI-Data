@@ -5,7 +5,6 @@ DROP TABLE IF EXISTS course_restriction;
 DROP TABLE IF EXISTS prereq_course;
 DROP TABLE IF EXISTS prereq_nesting;
 DROP TABLE IF EXISTS course_relationship;
-DROP TABLE IF EXISTS course_availability;
 DROP TABLE IF EXISTS course;
 
 -- create the tables
@@ -18,18 +17,6 @@ CREATE TABLE IF NOT EXISTS course(
     credit_max TINYINT NOT NULL,
     CONSTRAINT pk_course
         PRIMARY KEY(dept, code_num)
-) COMMENT 'Courses from the RPI catalog';
-
-CREATE TABLE IF NOT EXISTS course_availability(
-    dept VARCHAR(4) NOT NULL,
-    code_num SMALLINT NOT NULL,
-    sem_year SMALLINT NOT NULL,
-    semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
-    CONSTRAINT pk_course_avail
-        PRIMARY KEY(dept, code_num, sem_year, semester),
-    CONSTRAINT fk_course_avail_course
-        FOREIGN KEY(dept, code_num)
-        REFERENCES course(dept, code_num)
 ) COMMENT 'Courses from the RPI catalog';
 
 CREATE TABLE IF NOT EXISTS course_relationship(
