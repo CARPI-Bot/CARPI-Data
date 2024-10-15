@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
-
+import sys
 
 
 # def main():
@@ -76,7 +76,10 @@ def main():
                 # bachelors
                 if storage_p[index_of_degree] == "Baccalaureate":
                     for degree in storage_ul[index_of_degree]:
-                        classes_and_requirements[degree[0]] = {}
+                        classes_and_requirements[degree[0]] = {
+                            "Fall": [],
+                            "Spring": []
+                        }
                         link = degree[1]
                         requirements = requests.get(link)
                         print(classes_and_requirements)
@@ -89,15 +92,52 @@ def main():
                             all_leftpads = all_info.findAll('div', attrs={'class':'custom_leftpad_20'}, recursive=False)[0:4]
                             # print(all_acalog_cores)
                             # print(all_leftpads)
-                            fall_sem = []
-                            spring_sem = []
                             for i in range(4):
-                                fall_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[0].find('ul')
-                                spring_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[1].find('ul')
-                                print(fall_classes)
-                                return
+                                fall_sem = []
+                                spring_sem = []
+                                fall_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[0].find('ul').findAll('li')
+                                spring_classes = all_leftpads[i].findAll('div', attrs={'class':'acalog-core'})[1].find('ul').findAll('li')
                                 if i == 0:
-                                    classes_and_requirements[degree[0]]["First Year"] = []
+                                    index = 0
+                                    while index < len(fall_classes):
+                                        class_and_credits = fall_classes[index].get_text()
+                                        try:
+                                            test = class_and_credits.index(":")
+                                            # Proceed with the logic if the colon is found
+                                            # For example, split the string
+                                            class_item = class_and_credits[0:test - 13]
+                                            credits_per_class = class_and_credits[test + 2:test + 3]
+                                            fall_sem.append(class_item + ":" + str(credits_per_class))
+                                            index += 1
+                                        except ValueError:
+                                            # Skip the item or handle it in case of missing colon
+                                            print("Colon not found, skipping this entry.")
+                                            if class_and_credits == "or":
+                                                or_classes = []
+                                                fall_sem.pop(len(fall_sem) - 1)
+                                                first_choice = fall_classes[index - 1].get_text()
+
+                                                test = first_choice.index(":")
+                                                # Proceed with the logic if the colon is found
+                                                # For example, split the string
+                                                class_item = first_choice[0:test - 13]
+                                                credits_per_class = first_choice[test + 2:test + 3]
+                                                or_classes.append(class_item + ":" + str(credits_per_class))
+
+                                                second_choice = fall_classes[index + 1].get_text()
+                                                test = second_choice.index(":")
+                                                # Proceed with the logic if the colon is found
+                                                # For example, split the string
+                                                class_item = second_choice[0:test]
+                                                credits_per_class = second_choice[test + 2:test + 3]
+                                                or_classes.append(class_item + ":" + str(credits_per_class))
+                                                fall_sem.append(or_classes)
+                                                index += 2
+                                            else:
+                                                index += 1
+                                    classes_and_requirements[degree[0]]["Fall"] = fall_sem
+                                    print(classes_and_requirements)
+                                    sys.exit(1)
                                 elif i == 1:
                                     classes_and_requirements[degree[0]]["Second Year"] = []
                                 elif i == 2:
