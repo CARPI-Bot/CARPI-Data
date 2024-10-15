@@ -80,6 +80,7 @@ async def get_courses(session, term, subject_code):
         return course_dict
         
 async def parse_prereqs(soup):
+    # prereq_pattern = r"(?:Prerequisite(?:s)?|Prerequisiste|Prerequisite or Corequisite):\s?(.*?)(?=\bCorequisite\b|$)"
     prereq_label = soup.find('span', class_='fieldlabeltext', string='Prerequisites: ')
     
     # No prerequisites found
@@ -154,17 +155,19 @@ async def get_sections_info(session, term, soup):
       "saturday": {},
       "other": {},
     }
-    instructors = "None"
+    instructors = []
 
     #per row in section
     for section_row in section_table.find_all('tr')[1:]:  # Skip the header row
         #per cell in row
         section_row_info = [section_cells.text for section_cells in section_row.find_all("td")]
+
         time = section_row_info[1]
         days = section_row_info[2]
         location = section_row_info[3]
         if section_row_info[-1] != "TBA":
-            instructors = utils.clean_instructors(section_row_info[-1])
+            instructors_string = utils.clean_instructors(section_row_info[-1])
+            instructors = instructors_string.split(", ")
 
         days = days.replace(u'\xa0', u' ')
 
@@ -179,7 +182,7 @@ async def get_sections_info(session, term, soup):
     capacity, registered, open_seats = await get_section_seat_info(session, term, CRN)
     section_entry = {
       "CRN": CRN,
-      "instructor": instructors.split(',')[0].strip(),  # Only take the first instructor
+      "instructor": instructors,
       "schedule": schedule,
       "capacity": int(capacity),
       "registered": int(registered),
@@ -229,6 +232,8 @@ async def get_course_detail(session, term, subject_code, course_code):
     if(sections_data == None):
         return None
 
+    coreq_pattern = r"Corequisite:\s?(.*)"
+
     for _ in course_data:
         if _ != "":
             if(info["description"] == ""): # if not empty
@@ -236,15 +241,14 @@ async def get_course_detail(session, term, subject_code, course_code):
             else:
                 if("Corequisite:" in _):
                     try:
-                        if("Prerequisites/Corequisites: Corequisite:" in _):
-                            info["corequisite"] = [_.split(":")[2].strip()]
-                        else:
-                            info["corequisite"] = [_.split(":")[1].strip()]
+                        if("Corequisite:" in _):
+                            coreq_match = re.search(coreq_pattern, _, re.IGNORECASE)
+                            info["corequisite"] = [coreq_match.group(1).strip()]
                     except OSError as e:
                         print(e)
                         print(f"ERROR Coreq: {subject_code} - {course_code}")
                         info["corequisite"] = None
-                elif("Prerequisites/Corequisites:" in _):
+                elif("Prerequisite:" in _):
                     try:
                         info["prerequisite"] = await parse_prereqs(soup)
                     except OSError as e:
@@ -271,7 +275,7 @@ async def get_course_detail(session, term, subject_code, course_code):
                         info["offered"] = None
                 elif("Cross Listed:" in _):
                     try:
-                        info["crosslist"] = _.split(":")[1].strip()
+                        info["crosslist"] = [_.split(":")[1].strip()]
                     except OSError as e:
                         print(e)
                         print(f"ERROR crosslist: {subject_code} - {course_code}")
@@ -283,10 +287,10 @@ async def get_course_detail(session, term, subject_code, course_code):
 
 async def main():
     total_start = time.time()
-    start_year = 2023
+    start_year = 2021
     end_year = 2024
     for i in range(start_year, end_year + 1):
-        for semester in ["spring", "summer", "fall"]:
+        for semester in ["fall", "spring", "summer"]:
             term = utils.get_term(i, semester)
             print(f"Running Term: {term}")
             async with aiohttp.ClientSession() as session:
