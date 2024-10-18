@@ -1,4 +1,5 @@
 -- drop existing tables to be replaced
+DROP TABLE IF EXISTS course_attribute;
 DROP TABLE IF EXISTS course_seats;
 DROP TABLE IF EXISTS professor;
 DROP TABLE IF EXISTS course_restriction;
@@ -112,3 +113,23 @@ CREATE TABLE IF NOT EXISTS course_seats(
         FOREIGN KEY(dept, code_num)
         REFERENCES course(dept, code_num)
 ) COMMENT 'Seats filled per semester for each course';
+
+CREATE TABLE IF NOT EXISTS course_attribute(
+    dept VARCHAR(4) NOT NULL,
+    code_num SMALLINT NOT NULL,
+    attr ENUM(
+        'CI',
+        'Capstone',
+        'DI1',
+        'DI2',
+        'WI',
+        'HASS Inq',
+        'Intro Course',
+        'PDII Option'
+    ) NOT NULL,
+    CONSTRAINT pk_course_attribute
+        PRIMARY KEY(dept, code_num, attr),
+    CONSTRAINT fk_course_attribute_course
+        FOREIGN KEY(dept, code_num)
+        REFERENCES course(dept, code_num)
+) COMMENT 'Attributes for each course';
