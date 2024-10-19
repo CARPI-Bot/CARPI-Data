@@ -85,7 +85,7 @@ async def parse_prereqs(soup):
     
     # No prerequisites found
     if not prereq_label:
-      return []
+        return []
     
     prereq_info = []
     for sibling in prereq_label.next_siblings:
@@ -104,190 +104,226 @@ async def parse_prereqs(soup):
     return individual_prereq 
 
 async def fetch_CRNs(soup):
-  CRNs = []
-  section_title_wrappers = soup.find_all("th", class_="ddtitle")
-  for section_title_wrapper in section_title_wrappers:
-    section_title = section_title_wrapper.find("a").contents[0]
-    CRN = re.search(r"\d{5}", section_title).group()
-    CRNs.append(CRN)
-  return CRNs
+    CRNs = []
+    section_title_wrappers = soup.find_all("th", class_="ddtitle")
+    for section_title_wrapper in section_title_wrappers:
+        section_title = section_title_wrapper.find("a").contents[0]
+        CRN = re.search(r"\d{5}", section_title).group()
+        CRNs.append(CRN)
+    return CRNs
 
-async def get_section_seat_info(session, term, CRN):
-  url = "https://sis.rpi.edu/rss/bwckschd.p_disp_detail_sched"
-  params = f"term_in={term}&crn_in={CRN}"
-  url = f"{url}?{params}"
-  async with session.get(url) as response:
-    soup = bs4.BeautifulSoup(await response.text(), "lxml")  
-    seat_table = soup.find("table",
-    {
-      "class": "datadisplaytable",
-      "summary": "This layout table is used to present the seating numbers.",
-    }
-  )
-  seat_info = seat_table.find_all("td")
+async def get_section_data(session, term, CRN):
+    url = "https://sis.rpi.edu/rss/bwckschd.p_disp_detail_sched"
+    params = f"term_in={term}&crn_in={CRN}"
+    url = f"{url}?{params}"
+    async with session.get(url) as response:
+        soup = bs4.BeautifulSoup(await response.text(), "lxml")  
+        seat_table = soup.find("table",
+        {
+            "class": "datadisplaytable",
+            "summary": "This layout table is used to present the seating numbers.",
+        })
+        section_body = soup.find("td",{"class": "dddefault"}).getText()
 
-  capacity = seat_info[1].text
-  registered = seat_info[2].text
-  open_seats = seat_info[3].text
-  
-  return capacity, registered, open_seats
+    seat_info = seat_table.find_all("td")
 
-async def get_sections_info(session, term, soup):
-  CRNs = await fetch_CRNs(soup)  
+    course_pattern = r"[A-Z]{4}\s\d{4}"
 
-  section_tables = soup.find_all("table",
-    {
-      "class": "datadisplaytable",
-      "summary": "This table lists the scheduled meeting times and assigned instructors for this class..",
-    },
-  )
-
-  sections_data = []
-  count = 0
-  #per section
-  for section_table in section_tables:
-    schedule = {
-      "monday": {},
-      "tuesday": {},
-      "wednesday": {},
-      "thursday": {},
-      "friday": {},
-      "saturday": {},
-      "other": {},
-    }
-    instructors = []
-
-    #per row in section
-    for section_row in section_table.find_all('tr')[1:]:  # Skip the header row
-        #per cell in row
-        section_row_info = [section_cells.text for section_cells in section_row.find_all("td")]
-
-        time = section_row_info[1]
-        days = section_row_info[2]
-        location = section_row_info[3]
-        if section_row_info[-1] != "TBA":
-            instructors_string = utils.clean_instructors(section_row_info[-1])
-            instructors = instructors_string.split(", ")
-
-        days = days.replace(u'\xa0', u' ')
-
-        for day in utils.map_day_codes_to_days(days):
-            day_info = {
-                "time": time,
-                "location": location
-            }
-            schedule[day] = day_info
-
-    CRN = CRNs[count]
-    capacity, registered, open_seats = await get_section_seat_info(session, term, CRN)
-    section_entry = {
-      "CRN": CRN,
-      "instructor": instructors,
-      "schedule": schedule,
-      "capacity": int(capacity),
-      "registered": int(registered),
-      "open": int(open_seats)
-    }
+    capacity = seat_info[1].text
+    registered = seat_info[2].text
+    open_seats = seat_info[3].text
     
-    sections_data.append(section_entry)
-    count += 1
 
-  return sections_data
+    crosslist = []
+    crosslist = re.findall(course_pattern, section_body)
 
-async def fetch_sections(session, term, subject_code, course_code):
+    return crosslist, capacity, registered, open_seats
+
+async def get_section_info(session, term, soup):
+    CRNs = await fetch_CRNs(soup)  
+
+    section_tables = soup.find_all("table",
+    {
+            "class": "datadisplaytable",
+            "summary": "This table lists the scheduled meeting times and assigned instructors for this class..",
+        },
+    )
+
+    sections_data = []
+    crosslist = []
+    count = 0
+    
+    #per section
+    for section_table in section_tables:
+        schedule = {
+            "monday": {},
+            "tuesday": {},
+            "wednesday": {},
+            "thursday": {},
+            "friday": {},
+            "saturday": {},
+            "other": {},
+        }
+        instructors = []
+
+        #per row in section
+        for section_row in section_table.find_all('tr')[1:]:  # Skip the header row
+            #per cell in row
+            section_row_info = [section_cells.text for section_cells in section_row.find_all("td")]
+
+            time = section_row_info[1]
+            days = section_row_info[2]
+            location = section_row_info[3]
+            if section_row_info[-1] != "TBA":
+                instructors_string = utils.clean_instructors(section_row_info[-1])
+                instructors = instructors_string.split(", ")
+
+            days = days.replace(u'\xa0', u' ')
+
+            for day in utils.map_day_codes_to_days(days):
+                day_info = {
+                    "time": time,
+                    "location": location
+                }
+                schedule[day] = day_info
+
+        CRN = CRNs[count]
+        response_crosslist, capacity, registered, open_seats = await get_section_data(session, term, CRN)
+
+        if(response_crosslist != None):
+            for course in response_crosslist:
+                if course not in crosslist:
+                    crosslist.append(course)
+            
+        section_entry = {
+            "CRN": CRN,
+            "instructor": instructors,
+            "schedule": schedule,
+            "capacity": int(capacity),
+            "registered": int(registered),
+            "open": int(open_seats)
+        }
+        
+        sections_data.append(section_entry)
+        count += 1
+
+    return crosslist, sections_data
+
+async def fetch_crosslist_sections(session, term, subject_code, course_code):
   url = "https://sis.rpi.edu/rss/bwckctlg.p_disp_listcrse"
   param = f"term_in={term}&subj_in={subject_code}&crse_in={course_code}&schd_in=L"
   url = f"{url}?{param}"
   async with session.get(url) as response:
     soup = bs4.BeautifulSoup(await response.text(), "lxml")
 
-    is_session_found = soup.find("caption", class_="captiontext")
-    if(is_session_found == None):
-        return None
-    
-    sections_data = await get_sections_info(session, term, soup)
-    return sections_data
+    is_section_found = soup.find("caption", class_="captiontext")
+    if(is_section_found == None):
+        return None, None
+
+    response_crosslist, sections_data = await get_section_info(session, term, soup)
+
+    return response_crosslist, sections_data
   
+async def parse_attributes(soup, term, subject_code, course_code):
+    attributes = []
+    attribute_label = soup.find('span', class_='fieldlabeltext', string='Course Attributes: ')
+
+    if not attribute_label:
+        return attributes
+    
+    attributes = attribute_label.next.next.next.strip().split(", ")
+
+    return attributes
+
+async def parse_crosslist(soup):
+    soup.find('span', class_='fieldlabeltext', string='Cross Listed: ')
+        
+
 async def get_course_detail(session, term, subject_code, course_code):
-  url = "https://sis.rpi.edu/rss/bwckctlg.p_disp_course_detail"
-  params = f"cat_term_in={term}&subj_code_in={subject_code}&crse_numb_in={course_code}"
-  url = f"{url}?{params}"
-  info = {
-    "description" : "",
-    "corequisite" : [],
-    "prerequisite" : [],
-    "crosslist" : [],
-    "credits" : {
-        "min": 0,
-        "max": 0
-    },
-    "offered" : "",
-  }
-  
-  async with session.get(url) as response:
-    soup = bs4.BeautifulSoup(await response.text(), "lxml")
+    url = "https://sis.rpi.edu/rss/bwckctlg.p_disp_course_detail"
+    params = f"cat_term_in={term}&subj_code_in={subject_code}&crse_numb_in={course_code}"
+    url = f"{url}?{params}"
+    info = {
+        "description" : "",
+        "corequisite" : [],
+        "prerequisite" : [],
+        "crosslist" : [],
+        "attributes" : [],
+        "credits" : {
+            "min": 0,
+            "max": 0
+        },
+        "offered" : "",
+    }
     
-    course_data = soup.find("td", class_="ntdefault").contents[0].strip().split("\n")
-    sections_data = await fetch_sections(session, term, subject_code, course_code)
-    if(sections_data == None):
-        return None
+    async with session.get(url) as response:
+        soup = bs4.BeautifulSoup(await response.text(), "lxml")
+        
+        course_data = soup.find("td", class_="ntdefault").contents[0].strip().split("\n")
 
-    coreq_pattern = r"Corequisite:\s?(.*)"
+        crosslist, sections_data = await fetch_crosslist_sections(session, term, subject_code, course_code)
 
-    for _ in course_data:
-        if _ != "":
-            if(info["description"] == ""): # if not empty
-                info["description"] = _.strip()
-            else:
-                if("Corequisite:" in _):
-                    try:
-                        if("Corequisite:" in _):
-                            coreq_match = re.search(coreq_pattern, _, re.IGNORECASE)
-                            info["corequisite"] = [coreq_match.group(1).strip()]
-                    except OSError as e:
-                        print(e)
-                        print(f"ERROR Coreq: {subject_code} - {course_code}")
-                        info["corequisite"] = None
-                elif("Prerequisite:" in _):
-                    try:
-                        info["prerequisite"] = await parse_prereqs(soup)
-                    except OSError as e:
-                        print(e)
-                        print(f"ERROR Prereq: {subject_code} - {course_code}")
-                        info["prerequisite"] = None
-                elif("Credit Hours:" in _):
-                    try:
-                        min_max = utils.get_min_max(_.split(":")[1].strip())
-                        info["credits"] = {
-                            "min": min_max[0],
-                            "max": min_max[1]
-                        } 
-                    except OSError as e:
-                        print(e)
-                        print(f"ERROR Credit: {subject_code} - {course_code}")
-                        info["credits"] = None
-                elif("When Offered: " in _):
-                    try:
-                        info["offered"] = _.split(":")[1].strip()
-                    except OSError as e:
-                        print(e)
-                        print(f"ERROR Offered: {subject_code} - {course_code}")
-                        info["offered"] = None
-                elif("Cross Listed:" in _):
-                    try:
-                        info["crosslist"] = [_.split(":")[1].strip()]
-                    except OSError as e:
-                        print(e)
-                        print(f"ERROR crosslist: {subject_code} - {course_code}")
-                        info["crosslist"] = None
+        if(sections_data == None):
+            return None
 
-    info["sections"] = sections_data 
+        coreq_pattern = r"Corequisite:\s?(.*)"
+
+        for _ in course_data:
+            if _ != "":
+                if(info["description"] == ""): # if not empty
+                    info["description"] = _.strip()
+                else:
+                    if("Corequisite:" in _):
+                        try:
+                            if("Corequisite:" in _):
+                                coreq_match = re.search(coreq_pattern, _, re.IGNORECASE)
+                                info["corequisite"] = [coreq_match.group(1).strip()]
+                        except OSError as e:
+                            print(e)
+                            print(f"ERROR Coreq: {subject_code} - {course_code}")
+                            info["corequisite"] = None
+                    elif("Prerequisite:" in _):
+                        try:
+                            info["prerequisite"] = await parse_prereqs(soup)
+                        except OSError as e:
+                            print(e)
+                            print(f"ERROR Prereq: {subject_code} - {course_code}")
+                            info["prerequisite"] = None
+                    elif("Credit Hours:" in _):
+                        try:
+                            min_max = utils.get_min_max(_.split(":")[1].strip())
+                            info["credits"] = {
+                                "min": min_max[0],
+                                "max": min_max[1]
+                            } 
+                        except OSError as e:
+                            print(e)
+                            print(f"ERROR Credit: {subject_code} - {course_code}")
+                            info["credits"] = None
+                    elif("When Offered: " in _):
+                        try:
+                            info["offered"] = _.split(":")[1].strip()
+                        except OSError as e:
+                            print(e)
+                            print(f"ERROR Offered: {subject_code} - {course_code}")
+                            info["offered"] = None
+                    elif("Cross Listed:" in _):
+                        try:
+                            info["crosslist"] = [_.split(":")[1].strip()]
+                        except OSError as e:
+                            print(e)
+                            print(f"ERROR crosslist: {subject_code} - {course_code}")
+                            info["crosslist"] = None
+
+        info["crosslist"] = crosslist
+        info["attributes"] = await parse_attributes(soup, term, subject_code, course_code)
+        info["sections"] = sections_data 
 
     return info
 
 async def main():
     total_start = time.time()
-    start_year = 2021
+    start_year = 2023
     end_year = 2024
     for i in range(start_year, end_year + 1):
         for semester in ["fall", "spring", "summer"]:
