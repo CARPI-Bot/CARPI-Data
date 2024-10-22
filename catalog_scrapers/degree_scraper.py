@@ -293,8 +293,17 @@ def main():
                                     classes_and_requirements[degree[0]]["Second Year"]["Spring"] = spring_sem
                                     # print(classes_and_requirements)
                                     # sys.exit(1)
+
+
+                                # TO DO
+                                # Arch semesters are different. Approach must be different.
                                 elif i == 2:
                                     classes_and_requirements[degree[0]]["Third Year"] = []
+
+
+                                    classes_and_requirements[degree[0]]["Third Year"]["Fall"] = fall_sem
+                                    classes_and_requirements[degree[0]]["Third Year"]["Spring"] = spring_sem
+
                                 else:
                                     # print("Sophomore year loading")
                                     index = 0
